@@ -2,3 +2,5 @@
 deprecated
 __pycache__
 *test*
+ref
+.vscode
