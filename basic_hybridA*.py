@@ -2,9 +2,11 @@ import numpy as np
 from matplotlib import pyplot as plt
 import math
 import heapq
+import turtle
 
 from map import Map
 import reeds_shepp as rs
+import draw
 
 pi = math.pi
 sin = np.sin
@@ -124,7 +126,7 @@ class HybridAStar:
                 rs_path = self.CheckIfNodeHasValidRS(neighbor)
                 if rs_path:
                     # 返回路径
-                    path1 = self.GetPath(current_node)
+                    path1 = self.GetPath(neighbor)
                     print(f"Path found in {count} iterations")
                     return path1, rs_path
                 
@@ -225,7 +227,7 @@ class HybridAStar:
         path = []
         current = node
         while current is not None:
-            path.append(current.position)
+            path.append((current.x, current.y, current.theta))
             current = current.parent
         return path[::-1]
     
@@ -329,12 +331,18 @@ def main():
     # 创建地图
     m = Map(map_type=1)
     m.MapInfo()
+    tesla, offsetx, offsety = draw.InitAndDrawMap(m)
     car = Object()
     
     # 设置起点和终点
+    offset = (offsetx, offsety, 0)
     start = (1, 1, pi/2)
     goal = (m.width-2, m.height-2, pi/2)
     print(f"Start: {start}, Goal: {goal}")
+    draw.goto(tesla, (start[0]+offset[0], start[1]+offset[1], start[2]))
+    draw.vec(tesla)
+    draw.goto(tesla, (goal[0]+offset[0], goal[1]+offset[1], goal[2]))
+    draw.vec(tesla)
     
     # 启动算法
     ha = HybridAStar(start, goal, m, car)
@@ -343,11 +351,21 @@ def main():
     # 打印结果
     print("Path:")
     print("Nodes:")
+    tesla.pencolor(0,1,0)
     for p in path:
-        print(f"({p[0]}, {p[1]})")
+        print(f"({p[0]}, {p[1], p[2]})")
+        lastnode = (p[0], p[1], p[2])
+        draw.goto(tesla, (p[0]+offset[0], p[1]+offset[1], p[2]))
+        draw.vec(tesla)
     print("RS Path:")
     for elements in rs_path:
         print(f"({elements.steering}, {elements.gear}, {elements.value:.2f})")
+    tesla.pencolor(0,1,1)
+    tesla.pensize(3)
+    draw.goto(tesla, (lastnode[0]+offset[0], lastnode[1]+offset[1], lastnode[2]))
+    draw.draw_path(tesla, rs_path, car.radius)
 
+    turtle.done()
+    
 if __name__ == '__main__':
     main()

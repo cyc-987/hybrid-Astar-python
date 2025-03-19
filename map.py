@@ -15,8 +15,8 @@ class Map:
         if map_type == 0:
             return
         elif map_type == 1:
-            self.map[0:15, 17] = 1
-            self.map[10:25, 34] = 1
+            self.map[0:15, 17:19] = 1
+            self.map[10:25, 34:36] = 1
         else:
             raise ValueError("Invalid map type")
     
