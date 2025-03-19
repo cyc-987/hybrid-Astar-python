@@ -148,6 +148,51 @@ class HybridAStar:
                     
         print(f"Path not found in {count} iterations")
         return None, None
+    
+    def SmoothPath(self, path: list):
+        '''平滑路径
+        Args:
+            path: 一系列点坐标列表
+        Returns:
+            RS曲线列表
+        '''
+        final = []
+        current_index = 0;
+        max_index = len(path) - 1
+        print(f"max index: {max_index}")
+        
+        while current_index < max_index:
+            # 从当前点到最后一个点的RS曲线
+            start = path[current_index]
+            end_index = max_index
+            
+            while end_index > current_index:
+                end = path[end_index]
+                min_rs_path, all_paths = rs.RSCurve(*start, self.car.radius)(*end)
+                
+                # 检查RS曲线是否合法
+                if self._CheckRSCollision(start, min_rs_path):
+                    all_failed = True
+                    for p in all_paths:
+                        if self._CheckRSCollision(start, p):
+                            continue
+                        else:
+                            all_failed = False
+                            break
+                else: p = min_rs_path
+                
+                if all_failed:
+                    end_index -= 1
+                else:
+                    print(f"RS path found from {current_index} to {end_index}")
+                    break
+            
+            # 添加RS曲线
+            final.append(p)
+            current_index = end_index
+            
+        return final
+                
                 
                 
     def CheckIfNodeHasValidRS(self, node: Node):
@@ -173,7 +218,7 @@ class HybridAStar:
         Returns:
             是否和障碍物碰撞
         '''
-        sample_interval = 0.5
+        sample_interval = 0.1
         x, y, theta = start
         
         for segment in path: # 对于path列表的每一个构成元素
@@ -256,10 +301,10 @@ class HybridAStar:
               node.y + radius * cos(node.theta)) # 左上角
         
         # 计算四个离散点
-        node_back_right = self.Rotate(node, o1, (step/self.car.radius), self.car.radius) # 右转后退
-        node_forward_right = self.Rotate(node, o1, -(step/self.car.radius), self.car.radius) # 右转前进
-        node_forward_left = self.Rotate(node, o2, (step/self.car.radius), self.car.radius) # 左转前进
-        node_back_left = self.Rotate(node, o2, -(step/self.car.radius), self.car.radius) # 左转后退
+        node_back_right = self.Rotate(node, o1, (step/self.car.radius), self.car.radius*2) # 右转后退
+        node_forward_right = self.Rotate(node, o1, -(step/self.car.radius), self.car.radius*2) # 右转前进
+        node_forward_left = self.Rotate(node, o2, (step/self.car.radius), self.car.radius*2) # 左转前进
+        node_back_left = self.Rotate(node, o2, -(step/self.car.radius), self.car.radius*2) # 左转后退
         
         # 合法性
         for n in [node_forward_straight, node_forward_back, node_forward_right, node_forward_left, node_back_right, node_back_left]:
@@ -363,6 +408,16 @@ def main():
     tesla.pencolor(0,1,1)
     tesla.pensize(3)
     draw.goto(tesla, (lastnode[0]+offset[0], lastnode[1]+offset[1], lastnode[2]))
+    draw.draw_path(tesla, rs_path, car.radius)
+    
+    # 平滑路径
+    rs_path_smooth = ha.SmoothPath(path)
+    tesla.pencolor(1,0.5,0)
+    tesla.pensize(5)
+    draw.goto(tesla, (start[0]+offset[0], start[1]+offset[1], start[2]))
+    tesla.speed(3)
+    for rs_path_tmp in rs_path_smooth:
+        draw.draw_path(tesla, rs_path_tmp, car.radius)
     draw.draw_path(tesla, rs_path, car.radius)
 
     turtle.done()
