@@ -14,9 +14,15 @@ class Map:
     def _GenerateMap(self, map_type: int):
         if map_type == 0:
             return
-        elif map_type == 1:
+        elif map_type == 1: # 生成一个简单的地图
             self.map[0:15, 17:19] = 1
             self.map[10:25, 34:36] = 1
+        elif map_type == 2: # 侧方停车地图
+            self.map[10, 0:21] = 1
+            self.map[10, 30:50] = 1
+            self.map[5:10, 20] = 1
+            self.map[5:10, 30] = 1
+            self.map[5, 20:30] = 1
         else:
             raise ValueError("Invalid map type")
     
