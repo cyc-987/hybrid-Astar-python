@@ -160,36 +160,45 @@ class HybridAStar:
         current_index = 0;
         max_index = len(path) - 1
         print(f"max index: {max_index}")
+        if max_index == 1: return None
         
         while current_index < max_index:
             # 从当前点到最后一个点的RS曲线
             start = path[current_index]
             end_index = max_index
+            valid_path_found = False
             
             while end_index > current_index:
                 end = path[end_index]
                 min_rs_path, all_paths = rs.RSCurve(*start, self.car.radius)(*end)
                 
                 # 检查RS曲线是否合法
-                if self._CheckRSCollision(start, min_rs_path):
-                    all_failed = True
-                    for p in all_paths:
-                        if self._CheckRSCollision(start, p):
-                            continue
-                        else:
-                            all_failed = False
-                            break
-                else: p = min_rs_path
-                
-                if all_failed:
-                    end_index -= 1
-                else:
-                    print(f"RS path found from {current_index} to {end_index}")
+                if not self._CheckRSCollision(start, min_rs_path):
+                    valid_path = min_rs_path
+                    valid_path_found = True
                     break
+                
+                all_paths.sort(key=lambda x: rs.PathLen(x, self.car.radius))
+                for p in all_paths:
+                    if not self._CheckRSCollision(start, p):
+                        valid_path = p
+                        valid_path_found = True
+                        break
+                    
+                if valid_path_found:
+                    break
+                else:
+                    end_index -= 1
+                
             
             # 添加RS曲线
-            final.append(p)
-            current_index = end_index
+            if valid_path_found:
+                final.append(valid_path)
+                print(f"RS path found from {current_index} to {end_index}")
+                current_index = end_index
+            else:
+                current_index += 1
+            
             
         return final
                 
@@ -337,10 +346,19 @@ class HybridAStar:
         Returns:
             是否有效
         '''
-        if not self._CheckNodeInMap(node):
-            return False
-        if self._CheckNodeCollision(node):
-            return False
+        neighbors_offset = [(0, 0), (0, 1), (1, 0), (1, 1), (0, -1), (-1, 0), (-1, -1), (1, -1), (-1, 1)]
+        nodes = []
+        for offset in neighbors_offset:
+            x = node.x + offset[0]
+            y = node.y + offset[1]
+            theta = node.theta
+            nodes.append(Node(x, y, theta))
+        
+        for n in nodes:   
+            if not self._CheckNodeInMap(n):
+                return False
+            if self._CheckNodeCollision(n):
+                return False
         return True
     
     def Rotate(self, node: Node, o: tuple, angle: float, r: float=-1):
